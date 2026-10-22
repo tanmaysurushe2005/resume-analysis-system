@@ -1,6 +1,8 @@
 import sys
 import sqlite3
 import types
+import csv
+import io
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,6 +15,7 @@ from resume_analyzer.models import (
     Evaluation,
     JobSpec,
     Recommendation,
+    Report,
     Requirement,
     RequirementMatch,
     ResumeProfile,
@@ -26,6 +29,13 @@ from resume_analyzer.ratelimit import DailyLimitReached, RateLimiter
 from resume_analyzer import cache
 from resume_analyzer import service
 from resume_analyzer.documents import read_document
+from resume_analyzer.readers import read_resume_file, read_resume_files
+from dashboard_logic import (
+    candidate_markdown,
+    comparison_rows,
+    ranking_csv,
+    ranking_excel,
+)
 
 JOB = JobSpec(title="T", requirements=[
     Requirement(id="M1", text="a", type="must"), Requirement(id="M2", text="b", type="must"),
@@ -34,6 +44,24 @@ JOB = JobSpec(title="T", requirements=[
 
 def m(i, s, conf="high"):
     return RequirementMatch(requirement_id=i, score=s, confidence=conf, evidence=["x"])
+
+
+def dashboard_report(score, tier="Advance"):
+    return Report(
+        candidate_ref="CAND-1",
+        job_title="T",
+        match_score=score,
+        tier=tier,
+        knockouts=[],
+        needs_human_review=False,
+        review_reasons=[],
+        profile=ResumeProfile(summary="summary"),
+        matches=[m("M1", 4), m("M2", 0), m("N1", 3)],
+        strengths=[],
+        gaps=[],
+        verify_in_interview=[],
+        meta={},
+    )
 
 
 def test_redaction_keeps_date_ranges():
@@ -52,6 +80,100 @@ def test_read_document_rejects_unknown_types(tmp_path):
     path.write_text("Backend engineer", encoding="utf-8")
     with pytest.raises(ValueError, match="Unsupported document type"):
         read_document(path)
+
+
+def test_read_resume_file_supports_text_pdf_docx_and_csv(tmp_path):
+    resume_text = "Backend engineer with Python, APIs, testing, and payments experience."
+    text_result = read_resume_file("resume.txt", resume_text.encode())
+    assert text_result == [("resume", resume_text)]
+
+    from docx import Document
+    document = Document()
+    document.add_paragraph(resume_text)
+    docx_buffer = io.BytesIO()
+    document.save(docx_buffer)
+    assert read_resume_file("resume.docx", docx_buffer.getvalue())[0][1] == resume_text
+
+    stream = (
+        b"BT /F1 12 Tf 72 720 Td "
+        b"(Backend engineer with Python, APIs, testing, and payments experience.) Tj ET"
+    )
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+        b"/Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+        b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n" + stream + b"\nendstream",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    ]
+    pdf_data = b"%PDF-1.4\n"
+    offsets = [0]
+    for index, obj in enumerate(objects, start=1):
+        offsets.append(len(pdf_data))
+        pdf_data += f"{index} 0 obj\n".encode() + obj + b"\nendobj\n"
+    xref_offset = len(pdf_data)
+    pdf_data += f"xref\n0 {len(objects) + 1}\n".encode()
+    pdf_data += b"0000000000 65535 f \n"
+    pdf_data += b"".join(f"{offset:010d} 00000 n \n".encode() for offset in offsets[1:])
+    pdf_data += (
+        f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\n"
+        f"startxref\n{xref_offset}\n%%EOF\n"
+    ).encode()
+    assert "Backend engineer" in read_resume_file("resume.pdf", pdf_data)[0][1]
+
+    csv_data = io.StringIO()
+    writer = csv.DictWriter(csv_data, fieldnames=["candidate_id", "resume_text"])
+    writer.writeheader()
+    writer.writerow({"candidate_id": "candidate-1", "resume_text": resume_text})
+    assert read_resume_file("resumes.csv", csv_data.getvalue().encode()) == [
+        ("candidate-1", resume_text)
+    ]
+
+
+def test_read_resume_file_reports_empty_and_missing_column():
+    with pytest.raises(ValueError, match="no extractable text"):
+        read_resume_file("empty.txt", b"")
+    with pytest.raises(ValueError, match="missing required column 'resume_text'.*name"):
+        read_resume_file("resumes.csv", b"name\ncandidate")
+
+
+def test_read_resume_file_rejects_unsupported_extension():
+    with pytest.raises(ValueError, match="unsupported extension"):
+        read_resume_file("resume.rtf", b"resume text")
+
+
+def test_read_resume_files_collects_errors_without_stopping():
+    good = b"Backend engineer with Python, APIs, testing, and payments experience."
+    results, errors = read_resume_files([
+        ("bad.txt", b""),
+        ("good.txt", good),
+    ])
+    assert results == [("good", good.decode())]
+    assert errors and errors[0][0] == "bad.txt"
+
+
+def test_dashboard_comparison_marks_missing_must_have():
+    rows = comparison_rows(JOB, [("candidate-a", dashboard_report(70))])
+    assert rows[1]["candidate-a"] == "0/4 - MISSING"
+    assert rows[0]["candidate-a"] == "4/4"
+
+
+def test_dashboard_exports_include_metadata_and_no_resume_text():
+    report = dashboard_report(70)
+    rows = [("candidate-a", report)]
+    csv_data = ranking_csv(rows, JOB, "mock", "1.0.0", "2026-01-01T00:00:00Z").decode()
+    excel_data = ranking_excel(rows, JOB, "mock", "1.0.0", "2026-01-01T00:00:00Z")
+    markdown_data = candidate_markdown(
+        "candidate-a", report, JOB, "mock", "1.0.0", "2026-01-01T00:00:00Z"
+    ).decode()
+    for data in (csv_data, markdown_data):
+        assert "Job title: T" in data
+        assert "Model: mock" in data
+        assert "Prompt version: 1.0.0" in data
+        assert "Generated at: 2026-01-01T00:00:00Z" in data
+        assert "Advisory recommendation - human review required" in data
+        assert "raw resume text" not in data
+    assert excel_data.startswith(b"PK")
 
 
 def test_pii_label_lines_removed():

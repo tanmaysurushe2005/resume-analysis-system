@@ -1,5 +1,11 @@
 # Resume Analysis & Recommendation System
 
+## Development status
+
+**Development project completed.** The CLI and Streamlit dashboard are implemented
+and validated with the available synthetic test data. This does not indicate
+production readiness or replace the validation requirements in the operating policy.
+
 A prompt-engineered pipeline that screens resumes for a recruitment firm: it turns a job description into testable requirements, scores each resume **with verifiable evidence**, and produces a recruiter-ready recommendation with an interview plan and candidate feedback.
 
 **Core idea: the LLM judges evidence; code does arithmetic, verification and policy.**
@@ -42,6 +48,33 @@ Resume and job-description files may be `.txt`, `.md`, `.pdf`, or `.docx`.
 PDF and DOCX extraction uses `pypdf` and `python-docx`, installed by
 `requirements.txt`. Scanned/image-only PDFs need OCR before analysis.
 
+## Dashboard
+
+Run the Streamlit dashboard from the project root:
+
+```powershell
+$env:PYTHONPATH="src"
+python -m streamlit run app.py
+```
+
+The dashboard accepts `.txt`, `.md`, `.pdf`, `.docx`, and `.csv` resume files.
+CSV uploads contain one resume per row with a required `resume_text` column and
+an optional `candidate_id` column:
+
+```csv
+candidate_id,resume_text
+candidate-1,"Backend engineer with Python experience..."
+```
+
+Dashboard limits:
+
+- Scanned or image-only PDFs have no extractable text without OCR and cannot be analyzed.
+- Provider free-tier quotas and the configured daily request budget limit real-model runs.
+- There is no login or role-based access control.
+
+Privacy notice: Resumes are sent to the configured AI provider. Use only synthetic
+or consented data.
+
 ## Providers
 - **Anthropic**: set `ANTHROPIC_API_KEY` and optionally `RA_PROVIDER=anthropic` and `RA_MODEL`.
 - **Gemini**: use Google AI Studio by setting `RA_PROVIDER=gemini`, `GEMINI_API_KEY` (or `GOOGLE_API_KEY`), and `RA_GEMINI_MODEL` to a current model available to the key.
@@ -73,6 +106,7 @@ The local daily counter uses the Pacific-time date to match Gemini's quota reset
 - `eval/` golden expectations + harness (tier accuracy, ordering, injection, grounding, stability, judge)
 - `tests/` unit tests for the deterministic parts
 - `docs/PROMPT_DESIGN.md` techniques, rationale, risks, how to iterate
+- [Operating policy](docs/OPERATING_POLICY.md)
 
 ## Evaluation results
 Fill in this table after running `python eval\run_eval.py --runs 3 --judge`.
@@ -102,6 +136,20 @@ Mock results are not evidence of prompt quality.
 - PDF and DOCX text extraction is supported; scanned/image-only documents still need OCR.
 - English only.
 - Not validated for production hiring.
+
+## Improvements needed
+
+- Analysis should be made faster than the previous version. This remains a needed
+  improvement and has not been marked complete.
+
+## Future scope
+
+- Improve analysis speed beyond the previous version.
+- Add recruiter-labelled calibration.
+- Run fairness validation on approved real data.
+- Verify provider data-use and retention terms.
+- Complete legal, privacy, security, and recruiter validation before any production use.
+- Add login, role-based access, audit logging, and automatic deletion.
 
 ## Responsible use
 Automated employment screening is regulated in many places (e.g. EU AI Act high-risk category, NYC Local Law 144, India's DPDP Act for personal data). Keep a human decision-maker, audit outcomes by group, disclose automation to candidates, and get legal review before production use.
