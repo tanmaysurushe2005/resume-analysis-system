@@ -1,0 +1,22 @@
+AARAV MEHTA
+aarav.mehta@example.com | +91 98765 43210 | linkedin.com/in/aaravmehta
+
+SUMMARY
+Backend engineer building payment and ledger services in Python.
+
+EXPERIENCE
+Senior Backend Engineer, PayStream Technologies (2022 - Present)
+- Designed and shipped 14 REST APIs in FastAPI serving 2M requests/day for a UPI payments product
+- Migrated reconciliation jobs to Celery with RabbitMQ, cutting processing time from 6h to 40 min
+- Wrote pytest suites reaching 92% coverage and ran them in GitHub Actions CI
+- Tuned PostgreSQL queries and indexes, reducing p95 latency by 38%
+- Containerised services with Docker and deployed to AWS ECS
+Backend Developer, Finlytics (2020 - 2022)
+- Built Flask services and PostgreSQL schemas for a lending analytics platform
+- Introduced unit tests with pytest and code reviews for a team of 6
+
+EDUCATION
+B.Tech Computer Engineering, Savitribai Phule Pune University (2016 - 2020)
+
+SKILLS
+Python, FastAPI, Flask, PostgreSQL, Redis, Docker, AWS, Celery, RabbitMQ, pytest

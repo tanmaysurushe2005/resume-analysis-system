@@ -1,0 +1,23 @@
+MEERA IYER
+meera.iyer@example.com | +91 98111 22334
+
+SUMMARY
+Self-taught backend engineer working on payment systems.
+
+EXPERIENCE
+Backend Engineer, LedgerLoop (2023 - Present)
+- Built payment webhook and refund REST APIs in Django REST Framework handling 300k transactions per month
+- Added Kafka event streaming for settlement updates with at-least-once delivery
+- Maintained pytest suite with 85% coverage and CI checks on every pull request
+- Modelled PostgreSQL schemas and wrote migrations for ledger tables
+- Deployed Docker images to GCP Cloud Run
+Career break (2021 - 2023)
+Freelance Python Developer, Self-employed (2018 - 2021)
+- Delivered 9 client web backends with Django, PostgreSQL and REST APIs
+- Wrote unit tests with pytest for payment integrations and reminder jobs
+
+EDUCATION
+Self-taught. Completed CS50x and the Django certification track.
+
+SKILLS
+Python, Django, PostgreSQL, Kafka, Docker, GCP, pytest

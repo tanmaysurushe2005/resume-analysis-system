@@ -1,0 +1,17 @@
+Job Title: Backend Engineer - Payments
+Seniority: Mid-level
+
+About the role
+You will build and maintain the services that move money for our merchants.
+
+Must-have
+- 3+ years of Python backend development
+- Experience designing REST APIs
+- SQL databases (PostgreSQL, MySQL)
+- Automated testing (pytest, unit tests, CI)
+
+Nice-to-have
+- Docker or container-based deployment
+- Cloud platforms (AWS, GCP, Azure)
+- Payments or fintech domain exposure
+- Message queues (Kafka, RabbitMQ, Celery)

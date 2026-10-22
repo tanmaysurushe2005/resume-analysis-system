@@ -1,0 +1,20 @@
+PRIYA NAIR
+priya.nair@example.com | +91 91234 56780
+
+SUMMARY
+Data analyst moving into software development.
+
+EXPERIENCE
+Junior Software Developer, BrightCart (2025 - Present)
+- Built 4 REST API endpoints in Flask for an order tracking feature
+- Wrote SQL queries against MySQL for reporting dashboards
+- Deployed a small service with Docker on a shared staging server
+Data Analyst, Orion Retail (2023 - 2025)
+- Automated weekly reports using Python and pandas
+- Maintained PostgreSQL reporting tables used by 12 store managers
+
+EDUCATION
+B.Sc Statistics, Fergusson College (2019 - 2022)
+
+SKILLS
+Python, SQL, Flask, MySQL, PostgreSQL, Docker, pandas, Excel
